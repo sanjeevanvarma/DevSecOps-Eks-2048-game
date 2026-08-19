@@ -12,9 +12,12 @@ spec:
       labels:
         app: react-app
     spec:
+      nodeSelector:
+        app-node: "true"
       containers:
         - name: react-app-container
           image: sanjeevanvarma/2048-game:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
 
