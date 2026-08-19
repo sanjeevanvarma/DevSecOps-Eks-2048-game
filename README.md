@@ -86,6 +86,9 @@ Docker containerization
 Kubernetes deployments and services on AWS EKS
 Monitoring and observability with Prometheus and Grafana
 End-to-end DevSecOps pipeline design
+
+
 👨‍💻 Author
 
-Sanjeevan Varma GitHub: https://github.com/sanjeevanvarma LinkedIn: https://www.linkedin.com/in/sanjeevan-varma-indukuri-90943529b/
+Sanjeevan Varma GitHub: https://github.com/sanjeevanvarma 
+LinkedIn: https://www.linkedin.com/in/sanjeevan-varma-indukuri-90943529b/
