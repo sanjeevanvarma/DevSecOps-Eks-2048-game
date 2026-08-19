@@ -1,0 +1,106 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk25'
+        nodejs 'node25'
+    }
+
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+
+    stages {
+
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/sanjeevanvarma/DevSecOps-Eks-2048-game'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh '''
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=2048 \
+                        -Dsonar.projectKey=game-2048
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    waitForQualityGate(
+                        abortPipeline: false,
+                        credentialsId: 'sonar-token'
+                    )
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('TRIVY FS SCAN') {
+            steps {
+                sh 'trivy fs . > trivyfs.txt'
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    withDockerRegistry(
+                        credentialsId: 'docker',
+                        toolName: 'docker'
+                    ) {
+                        sh 'docker build -t 2048-game .'
+                        sh 'docker tag 2048-game sanjeevanvarma/2048-game:latest'
+                        sh 'docker push sanjeevanvarma/2048-game:latest'
+                    }
+                }
+            }
+        }
+
+        stage('TRIVY IMAGE SCAN') {
+            steps {
+                sh 'trivy image sanjeevanvarma/2048-game:latest > trivyimage.txt'
+            }
+        }
+
+        stage('Deploy to Container') {
+            steps {
+                sh '''
+                    docker rm -f 2048-game || true
+                    docker run -d \
+                    --name 2048-game \
+                    -p 3001:80 \
+                    sanjeevanvarma/2048-game:latest
+                '''
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    withKubeConfig([credentialsId: 'k8s']) {
+                        sh 'kubectl apply -f deployment.yaml'
+                    }
+                }
+            }
+        }
+    }
+}
